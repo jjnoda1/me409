@@ -28,7 +28,7 @@ def usr(robot):
     # PID Controller
     coeffs = (100,0,20)
     current = bot_math.distance(0, 0, 0, 0.3)
-    dist = 0
+    dist = 0.3
     target = 0.3
     ctl = PIDController(coeffs, current, target)
 
@@ -54,6 +54,8 @@ def usr(robot):
                 if len(val[0]) > 1:
                     txt = val[0]
                     # print(val)
+
+                    # Get LED color from message
                     sub_str = 'led:'
                     res = [i for i in range(len(txt)) if txt.startswith(sub_str, i)]
 
@@ -71,7 +73,7 @@ def usr(robot):
                     # print(rgb_val)
                     r, g, b = (float(val) for val in rgb_val)
                     
-                    # Get the dist
+                    # Get the distance from message
                     ind = txt.index("distance")
                     ind_delim = ind + 1 + txt[ind+1:].index(";")
                     distance_val = txt[ind+9:ind_delim]
@@ -80,7 +82,7 @@ def usr(robot):
 
 
 
-
+            # Get id = 0's distance
             pose = robot.get_pose()
             if not pose:
                 continue
@@ -88,7 +90,6 @@ def usr(robot):
             pose_y = pose[1]
             # print(id, pose)
             robot.set_led(r, g, b)
-            # print("id: ", id, "turn on")
             robot.delay(200)
             curr_time = robot.get_clock()
             curr_time = round(curr_time, 2)
@@ -115,11 +116,6 @@ def usr(robot):
                     # Get the delay
                     ind = res[-1]
                     txt = txt[ind:]
-                    # msg_time = "time:"+ str(curr_time)+';'
-                    # r, g, b = (0, 100, 0)
-                    # msg = "led:("+ str(r)+","+str(g)+","+str(b)+");" + txt
-                    # robot.send_msg(msg)
-                    # print(ind)
                     
                     
                     # print(txt)
@@ -155,23 +151,31 @@ def usr(robot):
                     pose_x = pose[0]
                     pose_y = pose[1]
 
+                    # Find distance from id = 0 to other robots
                     dist = bot_math.distance(x_val, y_val, pose_x, pose_y)
                     if dist >= R:
                         r, g, b = (100, 0, 0)
                     else:
                         r, g, b = (0, 100, 0)
 
-
+            # Error before step
             error1 = ctl.last_error
             drive = ctl.step(dist, sample_period = 0.2 + T/1000)
+            # Error after step
             error2 = ctl.last_error
+
+            # Too close
             if error2 > 0:
+                # If error is decreasing (closer to desired distance)
                 if error2 < error1:
                     adjust = int(round(drive))
                 else:
                     adjust = 0
                 # print(id, dist, ctl.last_error, drive, adjust)
+
+            # Too far
             else:
+                # If error is decreasing (distance is getting further)
                 if error2 < error1:
                     adjust = -int(round(drive))
                 else:
