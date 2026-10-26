@@ -1,4 +1,5 @@
 import random
+import numpy as np
 from bot_api.control import PIDController
 import bot_api.math_utils as bot_math
 
@@ -10,16 +11,22 @@ def usr(robot):
     id = robot.id
 
     # Global radius variable
-    r = 0.5
+    R = 0.3
 
     # PID Controller
-    coeffs = (0.1, 0.1, 0)
-    # ctl = PIDController(coeffs, current, target)
-    # ctl.reset()
-    # while abs(ctl.last_error) > max_error:
-    #     # Measure input
-    #     drive = ctl.step(current)
-    #     do_drive(drive)
+    # Error is in metres (~0.3) but the output is a wheel speed (~50), so Kp must be large
+    coeffs = (100,0,100)
+    current = bot_math.distance(0, 0, 0, 0.3)
+    dist = 0
+    target = 0.3
+    ctl = PIDController(coeffs, current, target)
+    vel_l = 50
+    vel_r = 50
+
+    # LED colour, kept across iterations until a message sets it
+    r, g, b = (0, 100, 0)
+
+    adjust = 0
 
     # pose = robot.get_pose()
     # print(id, pose)
@@ -102,7 +109,15 @@ def usr(robot):
                     pose_y = pose[1]
 
                     dist = bot_math.distance(x_val, y_val, pose_x, pose_y)
-                    print(dist)
+                    if dist >= R:
+                        r, g, b = (0, 100, 0)
+                    else:
+                        r, g, b = (100, 0, 0)
+
+                    
+                    # print(dist)
+                        
+                        
 
                     # print("x val:" + x_val + " y val:" + y_val)
 
@@ -111,9 +126,29 @@ def usr(robot):
 
             # pose = robot.get_pose()
             # print(id, pose) 
-            robot.set_vel(55, 50)       
-            r, g, b = (0, 100, 0)
+            # robot.set_vel(55, 50)       
+            # r, g, b = (0, 100, 0)
+            error1 = ctl.last_error
+            drive = ctl.step(dist, sample_period = 0.2 + T/1000)
+            error2 = ctl.last_error
+            if error2 > 0:
+                if error2 < error1:
+                    adjust = int(round(drive))
+                else:
+                    adjust = 0
+                # print(id, dist, ctl.last_error, drive, adjust)
+            else:
+                if error2 < error1:
+                    adjust = -int(round(drive))
+                else:
+                    adjust = int(round(drive))
+
+            print(id, dist, ctl.last_error, drive, adjust)
+
+                
+
             robot.set_led(r,g,b)
+            robot.set_vel(vel_l, vel_r - adjust)
             robot.delay(200)
             T = int(T)
             curr_time = robot.get_clock()
