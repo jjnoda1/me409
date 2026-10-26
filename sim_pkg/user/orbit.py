@@ -1,3 +1,15 @@
+#########################################################
+#  orbit.py
+# This is the python file for orbiting one robot (id = 1)
+# clockwise around another robot (id = 0). When the robot
+# is greater than the desired distance, both robots will 
+# turn red. If the robot is less than the desired distance,
+# the robots will turn green.
+##########################################################
+
+# TODO: very unstable path, need to tune PID somehow
+# which might include putting anti-integral wind-up
+
 import random
 import numpy as np
 from bot_api.control import PIDController
@@ -14,12 +26,13 @@ def usr(robot):
     R = 0.3
 
     # PID Controller
-    # Error is in metres (~0.3) but the output is a wheel speed (~50), so Kp must be large
-    coeffs = (100,0,100)
+    coeffs = (100,0,20)
     current = bot_math.distance(0, 0, 0, 0.3)
     dist = 0
     target = 0.3
     ctl = PIDController(coeffs, current, target)
+
+    # Initial velocity term
     vel_l = 50
     vel_r = 50
 
@@ -34,13 +47,47 @@ def usr(robot):
     #     robot.delay(1000)
     while True:
         if id == 0:
+            val = robot.recv_msg(clear=True)
+
+            if len(val)>0:
+                # print(val)
+                if len(val[0]) > 1:
+                    txt = val[0]
+                    # print(val)
+                    sub_str = 'led:'
+                    res = [i for i in range(len(txt)) if txt.startswith(sub_str, i)]
+
+                    # Get the color
+                    ind = res[-1]
+                    txt = txt[ind:]
+                    
+                    
+                    # print(txt)
+                    ind_delim = txt.index(")")
+                    # print(ind_delim)
+                    rgb_val = txt[5:ind_delim]
+                    # print("Delay_val:",delay_val)
+                    rgb_val = rgb_val.split(",")
+                    # print(rgb_val)
+                    r, g, b = (float(val) for val in rgb_val)
+                    
+                    # Get the dist
+                    ind = txt.index("distance")
+                    ind_delim = ind + 1 + txt[ind+1:].index(";")
+                    distance_val = txt[ind+9:ind_delim]
+                    print(distance_val)
+                    distance_val = float(distance_val)
+
+
+
+
             pose = robot.get_pose()
             if not pose:
                 continue
             pose_x = pose[0]
             pose_y = pose[1]
             # print(id, pose)
-            robot.set_led(0,100,0)
+            robot.set_led(r, g, b)
             # print("id: ", id, "turn on")
             robot.delay(200)
             curr_time = robot.get_clock()
@@ -110,24 +157,11 @@ def usr(robot):
 
                     dist = bot_math.distance(x_val, y_val, pose_x, pose_y)
                     if dist >= R:
-                        r, g, b = (0, 100, 0)
-                    else:
                         r, g, b = (100, 0, 0)
-
-                    
-                    # print(dist)
-                        
-                        
-
-                    # print("x val:" + x_val + " y val:" + y_val)
+                    else:
+                        r, g, b = (0, 100, 0)
 
 
-
-
-            # pose = robot.get_pose()
-            # print(id, pose) 
-            # robot.set_vel(55, 50)       
-            # r, g, b = (0, 100, 0)
             error1 = ctl.last_error
             drive = ctl.step(dist, sample_period = 0.2 + T/1000)
             error2 = ctl.last_error
@@ -143,7 +177,7 @@ def usr(robot):
                 else:
                     adjust = int(round(drive))
 
-            print(id, dist, ctl.last_error, drive, adjust)
+            # print(id, dist, ctl.last_error, drive, adjust)
 
                 
 
@@ -153,7 +187,8 @@ def usr(robot):
             T = int(T)
             curr_time = robot.get_clock()
             msg_time = "time:"+ str(curr_time)+';'
-            msg = "led:("+ str(r)+","+str(g)+","+str(b)+");" + "delay:"+ str(T)+";" + msg_time
-            # robot.send_msg(msg)
+            msg = "led:("+ str(r)+","+str(g)+","+str(b)+");" + "delay:"+ str(T)+";" + msg_time + \
+                "distance:" + str(dist) + ";"
+            robot.send_msg(msg)
             robot.set_led(0,0,0)
             robot.delay(T)
