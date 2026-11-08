@@ -3,6 +3,7 @@ from bot_api import math_utils
 
 def usr(robot):
 
+    a = 0.01
     while True:
         robot.delay(10)
         if robot.virtual_id==1:
@@ -21,28 +22,38 @@ def usr(robot):
                 for i in range(len(msgs)):
                     test=struct.unpack('ffi',msgs[i][:12])
                     hop = test[2]
-                    coords = [tuple(test[0], test[1])]
+                    hop_coords = [tuple([test[0], test[1]])]
                     if hop in hops:
-                        hops(hop).append(coords)
+                        hops.setdefault(hop, []).append((test[0], test[1]))
                     else:
-                        hops.update(hop, coords)
+                        hops.update({hop: hop_coords})
                 min_hop = min(hops) # Value that you need to increase in the outgoing message
+                # v = 255*(min_hop % 2)
+                # robot.set_led(v, 0, 0)   # red on odd hops, off on even
+
                 coords = hops.get(min_hop)
                 # Get minimum distance from all of the minimum coords (if length of mins is at least 3)
                 # and do gradient descent
                 
                 # Find coords that minimize total squared error and then incrementally update
                 # with the given formula
-                if len(coords >= 3):
-                    for coord in coords:
-                        dist = math_utils.distance(0, 0, coord[0], coord[1])
-                        est_dist = 0.3*min_hop  # 0.3 is comm distance
-                        error = (dist - est_dist)**2
-
-
-
-                        
-                   
-
-            msg=struct.pack('ffi',0.0,0.0,0)       
-            robot.send_msg(msg)  # send pose x,y in message
+                coord = (0.0, 0.0)  # fallback if fewer than 3 neighbors
+                if len(coords) >= 3:
+                    # Estimated distance to the closest seed (lowest hop count)
+                    min_est_dist = 0.3*min_hop  # 0.3 is comm distance
+                    # Neighbor coord whose distance to the seed best matches the estimate
+                    best = min(coords, key=lambda c: (math_utils.distance(0, 0, c[0], c[1]) - min_est_dist)**2)
+                    min_dist = math_utils.distance(0, 0, best[0], best[1]) # Do this with other seed too
+                    if min_est_dist > 0 and min_dist > 0:
+                        dE_dx = best[0]*(1-min_dist/min_est_dist)
+                        dE_dy = best[1]*(1-min_dist/min_est_dist)
+                        coord = (best[0] - a*dE_dx, best[1] - a*dE_dy)
+                    else:
+                        coord = best
+                if coord[0] > 100:
+                    robot.set_led(100, 0, 0)
+                else:
+                    robot.set_led(0, 100, 0)
+                msg = struct.pack('ffi', coord[0], coord[1], min_hop + 1)
+                robot.send_msg(msg)
+                
