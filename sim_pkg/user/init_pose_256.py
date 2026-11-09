@@ -50,7 +50,7 @@ def init(swarmsize, x, y, theta, a_ids):
             theta[i] = 0
             if i==0:
                 a_ids[i]=1
-            elif i==15:
+            elif i==240:
                 a_ids[i]=2
         else:
             y[i] = (i % 16 ) * spacey+spacey/2
@@ -59,7 +59,7 @@ def init(swarmsize, x, y, theta, a_ids):
             theta[i] = 0
             if i==0:
                 a_ids[i]=1
-            elif i==15:
+            elif i==240:
                 a_ids[i]=2
 
 
