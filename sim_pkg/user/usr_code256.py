@@ -4,7 +4,7 @@ import numpy as np
 
 def usr(robot):
     # This is per robot
-    a = 0.05
+    a = 0.1
     seeds = {}      # {seed id: minimum hop count ever received}
     coord_estimate = []
     x_possible = np.linspace(0, 2.64, 9)
@@ -22,7 +22,7 @@ def usr(robot):
                      [1, 1, 1, 0, 0, 0, 1, 1],
                      [1, 1, 1, 1, 0, 0, 1, 1],
                      [1, 1, 1, 1, 1, 0, 1, 1],
-                     [1, 1, 1, 1, 1, 0, 1, 1],
+                     [1, 1, 1, 1, 1, 1, 1, 1],
                      [1, 1, 0, 1, 1, 1, 1, 1],
                      [1, 1, 0, 0, 1, 1 ,1 ,1],
                      [1 ,1 ,0 ,0 ,1 ,1 ,1 ,1],
