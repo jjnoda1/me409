@@ -1,11 +1,11 @@
 {
     "NUM_RUNS": 1,
-    "DEFAULT_USER": "usr_code256.py",
-    "DEFAULT_CONFIG": "config256.json",
-    "DEFAULT_INIT": "init_pose_256.py",
+    "DEFAULT_USER": "usr_code100.py",
+    "DEFAULT_CONFIG": "config100.json",
+    "DEFAULT_INIT": "init_pose100.py",
     "DEFAULT_TRIALS": 1,
-    "USER_1": "usr_code256.py",
-    "CONFIG_1": "config256.json",
-    "INIT_1": "init_pose_256.py",
+    "USER_1": "usr_code100.py",
+    "CONFIG_1": "config100.json",
+    "INIT_1": "init_pose100.py",
     "TRIALS_1": 1
 }
